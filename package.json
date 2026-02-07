@@ -1,0 +1,9 @@
+{
+  "name": "car-test",
+  "version": "1.0.0",
+  "description": "Save yourself the trip to the driveway. A $10 mix-check plugin.",
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "license": "MIT"
+}
