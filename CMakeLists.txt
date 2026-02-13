@@ -23,6 +23,15 @@ juce_add_plugin(CarTest
 
 juce_generate_juce_header(CarTest)
 
+juce_add_binary_data(CarTestData
+    SOURCES
+        Resources/bmw.jpg
+        Resources/sedan_ir.wav
+        Resources/phone_ir.wav
+        Resources/laptop_ir.wav
+        Resources/bt_speaker_ir.wav
+)
+
 target_sources(CarTest
     PRIVATE
         Source/PluginProcessor.cpp
@@ -42,6 +51,7 @@ target_compile_features(CarTest PRIVATE cxx_std_20)
 
 target_link_libraries(CarTest
     PRIVATE
+        CarTestData
         juce::juce_audio_utils
         juce::juce_dsp
     PUBLIC

@@ -4,14 +4,13 @@
 
 //==============================================================================
 /**
-    Generates background noise (road noise, AC hum, wind) to blend into the
-    output.  Driven by a single "amount" parameter (0 = silent, 1 = full).
+    Generates city background noise to blend into the output.
+    Driven by a single "amount" parameter (0 = silent, 1 = full).
 
     The noise is a mix of:
-      - Filtered pink noise  (simulates road rumble)
-      - Narrow-band hum      (simulates AC / fan drone)
-    When "windows down" mode is active, the character shifts to a broader
-    wind-rush noise with more high-frequency content.
+      - Filtered pink noise  (simulates road rumble / traffic)
+      - Narrow-band hum      (simulates AC / engine drone)
+      - Occasional broader spectrum (city ambience)
 */
 class NoiseGenerator
 {
@@ -19,7 +18,7 @@ public:
     NoiseGenerator();
 
     void prepare (double sampleRate, int samplesPerBlock);
-    void process (juce::AudioBuffer<float>& buffer, float amount, bool windowsDown);
+    void process (juce::AudioBuffer<float>& buffer, float amount);
     void reset();
 
 private:
@@ -42,9 +41,8 @@ private:
 
     // Low-pass to shape road noise
     OnePole roadLP;
-    // Band-pass for AC hum (~120 Hz)
+    // Band-pass for AC / engine hum (~120 Hz)
     OnePole humLP, humHP;
-
-    // Wind noise high-pass
-    OnePole windHP;
+    // Mid-range city ambience
+    OnePole cityLP;
 };

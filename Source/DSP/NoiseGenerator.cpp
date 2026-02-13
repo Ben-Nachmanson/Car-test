@@ -10,12 +10,12 @@ void NoiseGenerator::prepare (double sr, int /*samplesPerBlock*/)
     // Road noise low-pass  – keep rumble below ~400 Hz
     roadLP.setCoefficients (400.0f, sr);
 
-    // AC hum band: LP at 180 Hz, HP at 80 Hz ≈ narrow band around 120 Hz
+    // AC hum band: LP at 180 Hz, HP at 80 Hz -> narrow band around 120 Hz
     humLP.setCoefficients (180.0f, sr);
     humHP.setCoefficients (80.0f,  sr);
 
-    // Wind noise high-pass – only the upper hiss
-    windHP.setCoefficients (1500.0f, sr);
+    // City ambience mid-range texture
+    cityLP.setCoefficients (2000.0f, sr);
 
     reset();
 }
@@ -26,7 +26,7 @@ void NoiseGenerator::reset()
     roadLP.reset();
     humLP.reset();
     humHP.reset();
-    windHP.reset();
+    cityLP.reset();
 }
 
 //==============================================================================
@@ -49,7 +49,7 @@ float NoiseGenerator::generatePinkSample()
 }
 
 //==============================================================================
-void NoiseGenerator::process (juce::AudioBuffer<float>& buffer, float amount, bool windowsDownMode)
+void NoiseGenerator::process (juce::AudioBuffer<float>& buffer, float amount)
 {
     if (amount <= 0.0001f)
         return;
@@ -59,27 +59,16 @@ void NoiseGenerator::process (juce::AudioBuffer<float>& buffer, float amount, bo
 
     for (int s = 0; s < numSamples; ++s)
     {
-        // Generate noise components
         float pinkSample = generatePinkSample();
         float white = rng.nextFloat() * 2.0f - 1.0f;
 
-        float noise;
+        // City noise: road rumble + engine/AC hum + mid-range ambience
+        float roadSample = roadLP.processSample (pinkSample);
+        float humSample  = humLP.processSample (white);
+        humSample = humSample - humHP.processSample (humSample); // crude band-pass
+        float citySample = cityLP.processSample (pinkSample * 0.5f + white * 0.5f);
 
-        if (windowsDownMode)
-        {
-            // Wind rush: more high-frequency, broader spectrum
-            float windSample = windHP.processSample (white);
-            float roadSample = roadLP.processSample (pinkSample);
-            noise = windSample * 0.7f + roadSample * 0.3f;
-        }
-        else
-        {
-            // Normal: road rumble + AC hum
-            float roadSample = roadLP.processSample (pinkSample);
-            float humSample  = humLP.processSample (white);
-            humSample = humSample - humHP.processSample (humSample); // crude band-pass
-            noise = roadSample * 0.6f + humSample * 0.4f;
-        }
+        float noise = roadSample * 0.45f + humSample * 0.30f + citySample * 0.25f;
 
         // Scale by amount  (amount 0..1 maps to roughly -60 dB .. -12 dB)
         float gain = amount * amount * 0.25f;   // quadratic taper feels more natural

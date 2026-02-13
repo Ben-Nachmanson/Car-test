@@ -10,8 +10,6 @@ CarTestAudioProcessor::CarTestAudioProcessor()
 {
     presetParam      = apvts.getRawParameterValue ("preset");
     noiseAmountParam = apvts.getRawParameterValue ("noiseAmount");
-    windowsDownParam = apvts.getRawParameterValue ("windowsDown");
-    mixParam         = apvts.getRawParameterValue ("mix");
 }
 
 CarTestAudioProcessor::~CarTestAudioProcessor() {}
@@ -30,15 +28,6 @@ CarTestAudioProcessor::createParameterLayout()
     params.push_back (std::make_unique<juce::AudioParameterFloat> (
         juce::ParameterID { "noiseAmount", 1 }, "Noise",
         juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 0.0f));
-
-    // Windows Down toggle
-    params.push_back (std::make_unique<juce::AudioParameterBool> (
-        juce::ParameterID { "windowsDown", 1 }, "Windows Down", false));
-
-    // Dry/Wet mix  0..1   (1 = fully processed)
-    params.push_back (std::make_unique<juce::AudioParameterFloat> (
-        juce::ParameterID { "mix", 1 }, "Mix",
-        juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 1.0f));
 
     return { params.begin(), params.end() };
 }
@@ -93,44 +82,17 @@ void CarTestAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // Read parameters
     const int   presetIdx  = static_cast<int> (presetParam->load());
     const float noiseAmt   = noiseAmountParam->load();
-    const bool  winDown    = windowsDownParam->load() > 0.5f;
-    const float mix        = mixParam->load();
 
     // If bypass and no noise, early out
     if (presetIdx == 0 && noiseAmt < 0.0001f)
         return;
 
-    // Keep a dry copy for mix blending
-    juce::AudioBuffer<float> dryBuffer;
-    if (mix < 0.999f)
-    {
-        dryBuffer.makeCopyOf (buffer);
-    }
-
     // Apply environment processing
     envProcessor.setPreset (presetIdx);
-    envProcessor.setWindowsDown (winDown);
     envProcessor.process (buffer);
 
     // Add background noise
-    noiseGen.process (buffer, noiseAmt, winDown);
-
-    // Dry/wet mix
-    if (mix < 0.999f)
-    {
-        const float wet = mix;
-        const float dry = 1.0f - mix;
-
-        for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
-        {
-            auto* wetData = buffer.getWritePointer (ch);
-            auto* dryData = dryBuffer.getReadPointer (ch);
-            const int numSamples = buffer.getNumSamples();
-
-            for (int s = 0; s < numSamples; ++s)
-                wetData[s] = wetData[s] * wet + dryData[s] * dry;
-        }
-    }
+    noiseGen.process (buffer, noiseAmt);
 }
 
 //==============================================================================

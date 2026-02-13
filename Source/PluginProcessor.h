@@ -61,8 +61,6 @@ private:
     // Atomic parameter caches (read in processBlock)
     std::atomic<float>* presetParam     = nullptr;
     std::atomic<float>* noiseAmountParam = nullptr;
-    std::atomic<float>* windowsDownParam = nullptr;
-    std::atomic<float>* mixParam         = nullptr;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CarTestAudioProcessor)
 };
