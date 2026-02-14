@@ -68,53 +68,54 @@ inline std::vector<EnvironmentPreset> getBuiltInPresets()
     }
 
     // 1 – The Sedan
-    //   EQ shapes the cabin character; IR adds subtle room feel.
+    //   Modern car stereos sound pretty good — main character is cabin
+    //   boxiness in the low-mids, slight narrowing, and room feel.
+    //   Highs are mostly preserved.
     {
         EnvironmentPreset p;
         p.name             = "The Sedan";
         p.highPassFreq     = 35.0f;
-        p.lowPassFreq      = 13000.0f;
+        p.lowPassFreq      = 16000.0f;
         p.bands = {
-            { 80.0f,   +2.0f, 0.8f },   // gentle cabin bass coupling
+            { 80.0f,   +1.5f, 0.8f },   // gentle cabin bass coupling
             { 250.0f,  +1.5f, 1.0f },    // slight boxy low-mid
-            { 2000.0f, -1.5f, 1.0f },    // seat absorption dip
-            { 8000.0f, -3.0f, 0.7f },    // upholstery damping
+            { 2000.0f, -1.0f, 1.0f },    // mild seat absorption dip
         };
         p.outputGainDb     = 0.5f;
         p.irResourceName   = BinaryData::sedan_ir_wav;
         p.irResourceSize   = BinaryData::sedan_ir_wavSize;
-        p.irWetMix         = 0.20f;      // subtle cabin coloring
+        p.irWetMix         = 0.10f;      // very subtle cabin coloring
         p.stereoWidth      = 0.6f;
         p.earlyReflections = true;
         presets.push_back (p);
     }
 
     // 2 – The Phone
-    //   EQ does the heavy lifting for tiny-speaker character; IR adds subtle flavor.
+    //   Tiny speaker, no bass, harsh mids. Most extreme preset.
     {
         EnvironmentPreset p;
         p.name             = "The Phone";
         p.highPassFreq     = 300.0f;
-        p.lowPassFreq      = 14000.0f;
+        p.lowPassFreq      = 15000.0f;
         p.bands = {
             { 1500.0f, +1.5f, 1.2f },    // presence emphasis
-            { 3500.0f, +2.5f, 2.0f },    // phone resonance peak
+            { 3500.0f, +2.0f, 2.0f },    // phone resonance peak
         };
         p.outputGainDb     = 2.0f;       // compensate for bass removal by HP
         p.irResourceName   = BinaryData::phone_ir_wav;
         p.irResourceSize   = BinaryData::phone_ir_wavSize;
-        p.irWetMix         = 0.15f;      // light speaker coloring
+        p.irWetMix         = 0.08f;      // hint of speaker coloring
         p.stereoWidth      = 0.0f;
         presets.push_back (p);
     }
 
     // 3 – The Laptop
-    //   EQ shapes the thin/tinny character; IR adds subtle speaker coloring.
+    //   Thin, tinny, but decent high end. Narrow stereo from small driver spacing.
     {
         EnvironmentPreset p;
         p.name             = "The Laptop";
         p.highPassFreq     = 200.0f;
-        p.lowPassFreq      = 16000.0f;
+        p.lowPassFreq      = 17000.0f;
         p.bands = {
             { 1000.0f, +1.0f, 1.5f },    // tinny resonance
             { 2500.0f, +1.5f, 1.2f },    // laptop driver peak
@@ -122,26 +123,26 @@ inline std::vector<EnvironmentPreset> getBuiltInPresets()
         p.outputGainDb     = 1.5f;       // compensate for bass removal by HP
         p.irResourceName   = BinaryData::laptop_ir_wav;
         p.irResourceSize   = BinaryData::laptop_ir_wavSize;
-        p.irWetMix         = 0.15f;      // light speaker coloring
+        p.irWetMix         = 0.08f;      // hint of speaker coloring
         p.stereoWidth      = 0.4f;
         presets.push_back (p);
     }
 
     // 4 – The Bluetooth Speaker
-    //   EQ shapes the cheap-driver character; IR adds subtle coloring.
+    //   Mono, compressed, bass-boosted from DSP. High end is actually decent.
     {
         EnvironmentPreset p;
         p.name             = "The Bluetooth Speaker";
         p.highPassFreq     = 60.0f;
-        p.lowPassFreq      = 15000.0f;
+        p.lowPassFreq      = 17000.0f;
         p.bands = {
-            { 100.0f,  +3.0f, 0.7f },    // bass enhancement
-            { 3000.0f, +1.5f, 1.0f },    // presence push
+            { 100.0f,  +3.0f, 0.7f },    // bass enhancement (DSP bass boost)
+            { 3000.0f, +1.0f, 1.0f },    // slight presence push
         };
         p.outputGainDb     = 0.5f;
         p.irResourceName   = BinaryData::bt_speaker_ir_wav;
         p.irResourceSize   = BinaryData::bt_speaker_ir_wavSize;
-        p.irWetMix         = 0.18f;      // subtle speaker coloring
+        p.irWetMix         = 0.10f;      // subtle speaker coloring
         p.stereoWidth      = 0.0f;
         p.compress         = true;
         p.compThreshDb     = -12.0f;

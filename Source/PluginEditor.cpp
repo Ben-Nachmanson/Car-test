@@ -2,7 +2,7 @@
 #include "BinaryData.h"
 
 //==============================================================================
-//  DashboardLookAndFeel
+//  DashboardLookAndFeel — physical car-button appearance
 //==============================================================================
 DashboardLookAndFeel::DashboardLookAndFeel()
 {
@@ -15,46 +15,77 @@ void DashboardLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button
                                                   bool isHighlighted, bool isDown)
 {
     auto bounds = button.getLocalBounds().toFloat().reduced (1.0f);
-    const float cornerSize = 6.0f;
+    const float cs = 3.5f;  // tight corner radius — physical car buttons
 
     const bool isOn = button.getToggleState();
 
+    // ---- Matte button surface with subtle gradient for 3D depth ----
     if (isOn)
     {
-        // Recessed: darker fill, inset shadow effect
-        g.setColour (DashColours::buttonOn);
-        g.fillRoundedRectangle (bounds, cornerSize);
+        // Active: neutral dark surface, same family as off-state but pressed in
+        juce::ColourGradient bgGrad (juce::Colour (0xff222222), bounds.getX(), bounds.getY(),
+                                      juce::Colour (0xff181818), bounds.getX(), bounds.getBottom(),
+                                      false);
+        g.setGradientFill (bgGrad);
+        g.fillRoundedRectangle (bounds, cs);
 
-        // Inner shadow (top edge darker)
+        // Recessed inner shadow at top (pressed-in feel)
         g.setColour (juce::Colours::black.withAlpha (0.4f));
-        g.fillRoundedRectangle (bounds.removeFromTop (3.0f), cornerSize);
-
-        // Amber LED indicator bar at top
-        auto ledBounds = button.getLocalBounds().toFloat().reduced (1.0f);
-        auto ledBar = ledBounds.removeFromTop (3.0f);
-        g.setColour (DashColours::amberLED);
-        g.fillRoundedRectangle (ledBar.reduced (8.0f, 0.0f), 1.5f);
-
-        // Subtle amber glow
-        g.setColour (DashColours::amberLED.withAlpha (0.08f));
-        g.fillRoundedRectangle (button.getLocalBounds().toFloat().reduced (1.0f), cornerSize);
+        g.fillRoundedRectangle (bounds.withHeight (2.5f), cs);
     }
     else
     {
-        // Dark glass overlay
-        g.setColour (DashColours::buttonOff);
-        g.fillRoundedRectangle (bounds, cornerSize);
+        // Inactive: raised matte surface
+        juce::ColourGradient bgGrad (juce::Colour (0xff2a2a2a), bounds.getX(), bounds.getY(),
+                                      juce::Colour (0xff1a1a1a), bounds.getX(), bounds.getBottom(),
+                                      false);
+        g.setGradientFill (bgGrad);
+        g.fillRoundedRectangle (bounds, cs);
+
+        // Top-edge highlight (light catching the raised surface)
+        g.setColour (juce::Colours::white.withAlpha (0.06f));
+        g.fillRoundedRectangle (bounds.withHeight (1.5f), cs);
 
         if (isHighlighted || isDown)
         {
-            g.setColour (juce::Colours::white.withAlpha (0.06f));
-            g.fillRoundedRectangle (bounds, cornerSize);
+            g.setColour (juce::Colours::white.withAlpha (0.04f));
+            g.fillRoundedRectangle (bounds, cs);
+        }
+
+        if (isDown)
+        {
+            // Pressed: invert the emboss
+            g.setColour (juce::Colours::black.withAlpha (0.15f));
+            g.fillRoundedRectangle (bounds, cs);
         }
     }
 
-    // Subtle border
-    g.setColour (juce::Colours::white.withAlpha (isOn ? 0.15f : 0.08f));
-    g.drawRoundedRectangle (button.getLocalBounds().toFloat().reduced (1.0f), cornerSize, 1.0f);
+    // ---- Crisp thin border ----
+    g.setColour (juce::Colours::white.withAlpha (isOn ? 0.12f : 0.06f));
+    g.drawRoundedRectangle (bounds, cs, 0.75f);
+
+    // ---- Bottom-edge shadow (depth against panel) ----
+    g.setColour (juce::Colours::black.withAlpha (0.3f));
+    auto shadowLine = bounds;
+    shadowLine = shadowLine.withTop (shadowLine.getBottom() - 1.0f).translated (0.0f, 1.5f);
+    g.fillRoundedRectangle (shadowLine, cs);
+
+    // ---- Small LED dot indicator (active only) ----
+    if (isOn)
+    {
+        float dotSize = juce::jmin (bounds.getWidth(), bounds.getHeight()) * 0.12f;
+        dotSize = juce::jlimit (4.0f, 7.0f, dotSize);
+        float dotX = bounds.getCentreX() - dotSize * 0.5f;
+        float dotY = bounds.getY() + 5.0f;
+
+        // LED glow
+        g.setColour (DashColours::amberLED.withAlpha (0.25f));
+        g.fillEllipse (dotX - 2.0f, dotY - 2.0f, dotSize + 4.0f, dotSize + 4.0f);
+
+        // LED dot
+        g.setColour (DashColours::amberLED);
+        g.fillEllipse (dotX, dotY, dotSize, dotSize);
+    }
 }
 
 void DashboardLookAndFeel::drawButtonText (juce::Graphics& g, juce::TextButton& button,
@@ -63,9 +94,16 @@ void DashboardLookAndFeel::drawButtonText (juce::Graphics& g, juce::TextButton& 
     auto bounds = button.getLocalBounds();
     const bool isOn = button.getToggleState();
 
+    // Offset text down slightly to account for LED dot space
+    if (isOn)
+        bounds.translate (0, 2);
+
     g.setColour (isOn ? DashColours::textBright
-                      : DashColours::textDim);
-    g.setFont (juce::FontOptions (11.0f, juce::Font::bold));
+                      : DashColours::textDim.withAlpha (0.7f));
+
+    // Scale font with button height for consistency across sizes
+    float fontSize = juce::jlimit (9.0f, 12.0f, static_cast<float> (bounds.getHeight()) * 0.32f);
+    g.setFont (juce::FontOptions (fontSize, juce::Font::bold));
     g.drawText (button.getButtonText(), bounds, juce::Justification::centred);
 }
 
@@ -102,7 +140,6 @@ void ChromeKnobLookAndFeel::drawRotarySlider (juce::Graphics& g,
         g.setColour (DashColours::knobFill);
         g.fillEllipse (centre.x - innerRadius, centre.y - innerRadius, innerRadius * 2.0f, innerRadius * 2.0f);
 
-        // Subtle inner highlight
         juce::ColourGradient innerGrad (juce::Colours::white.withAlpha (0.08f), centre.x, centre.y - innerRadius,
                                          juce::Colours::transparentBlack, centre.x, centre.y + innerRadius * 0.5f,
                                          false);
@@ -156,13 +193,31 @@ void ChromeKnobLookAndFeel::drawRotarySlider (juce::Graphics& g,
 }
 
 //==============================================================================
+//  Helper: draw a recessed dashboard panel surround
+//==============================================================================
+static void drawDashPanel (juce::Graphics& g, juce::Rectangle<float> bounds, float cs = 4.0f)
+{
+    // Subtle recessed panel — just enough to ground the buttons
+    g.setColour (juce::Colour (0x60101010));
+    g.fillRoundedRectangle (bounds, cs);
+
+    // Very faint top inner shadow
+    g.setColour (juce::Colours::black.withAlpha (0.15f));
+    g.fillRoundedRectangle (bounds.withHeight (1.5f), cs);
+
+    // Thin border
+    g.setColour (juce::Colours::white.withAlpha (0.03f));
+    g.drawRoundedRectangle (bounds, cs, 0.5f);
+}
+
+//==============================================================================
 //  CarTestAudioProcessorEditor
 //==============================================================================
 CarTestAudioProcessorEditor::CarTestAudioProcessorEditor (CarTestAudioProcessor& p)
     : AudioProcessorEditor (&p), processorRef (p)
 {
     // Load dashboard background from binary data
-    dashboardBg = juce::ImageCache::getFromMemory (BinaryData::bmw_jpg, BinaryData::bmw_jpgSize);
+    dashboardBg = juce::ImageCache::getFromMemory (BinaryData::Dashboard_png, BinaryData::Dashboard_pngSize);
 
     // Collect preset buttons
     presetButtons = { &bypassButton, &sedanButton, &phoneButton, &laptopButton, &btButton };
@@ -207,7 +262,6 @@ CarTestAudioProcessorEditor::~CarTestAudioProcessorEditor()
 {
     stopTimer();
 
-    // Clear look-and-feel references before destruction
     for (auto* btn : presetButtons)
         btn->setLookAndFeel (nullptr);
     noiseSlider.setLookAndFeel (nullptr);
@@ -229,49 +283,92 @@ void CarTestAudioProcessorEditor::paint (juce::Graphics& g)
         g.fillAll (juce::Colour (0xff1a1510));
     }
 
-    // Semi-transparent dark overlay for readability
-    g.setColour (juce::Colours::black.withAlpha (0.30f));
+    // Lighter overlay — let more of the dashboard photo show through
+    g.setColour (juce::Colours::black.withAlpha (0.22f));
     g.fillRect (area);
+
+    // Top vignette — darken behind the title for legibility
+    {
+        juce::ColourGradient vignette (juce::Colours::black.withAlpha (0.55f), 0.0f, 0.0f,
+                                        juce::Colours::transparentBlack, 0.0f,
+                                        static_cast<float> (area.getHeight()) * 0.22f, false);
+        g.setGradientFill (vignette);
+        g.fillRect (area.removeFromTop (static_cast<int> (area.getHeight() * 0.22f)));
+    }
 
     const float sx = static_cast<float> (getWidth())  / 650.0f;
     const float sy = static_cast<float> (getHeight()) / 380.0f;
+    const float s  = juce::jmin (sx, sy);
 
-    // Paint over the BMW steering wheel logo area
+    // ---- Recessed panel behind CAR button (head unit area) ----
     {
-        float cx = 148.0f * sx;
-        float cy = 270.0f * sy;
-        float r  = 22.0f * juce::jmin (sx, sy);
-        g.setColour (juce::Colour (0xff1a1815));
-        g.fillEllipse (cx - r, cy - r, r * 2.0f, r * 2.0f);
+        float panelX = 258.0f * sx;
+        float panelY = 136.0f * sy;
+        float panelW = 134.0f * sx;
+        float panelH = 52.0f  * sy;
+        drawDashPanel (g, { panelX, panelY, panelW, panelH }, 5.0f * s);
     }
 
-    // "CAR TEST" branding - top centre
+    // ---- Recessed panel behind passenger-side buttons ----
     {
-        g.setColour (DashColours::amberLED.withAlpha (0.9f));
-        g.setFont (juce::FontOptions (26.0f * juce::jmin (sx, sy), juce::Font::bold));
-        g.drawText ("CAR TEST", getLocalBounds().removeFromTop (static_cast<int> (48.0f * sy)),
+        float panelX = 434.0f * sx;
+        float panelY = 100.0f * sy;
+        float panelW = 206.0f * sx;
+        float panelH = 52.0f  * sy;
+        drawDashPanel (g, { panelX, panelY, panelW, panelH }, 5.0f * s);
+    }
+
+    // ---- Recessed panel behind BYPASS button ----
+    {
+        float panelX = 16.0f  * sx;
+        float panelY = 318.0f * sy;
+        float panelW = 96.0f  * sx;
+        float panelH = 46.0f  * sy;
+        drawDashPanel (g, { panelX, panelY, panelW, panelH }, 5.0f * s);
+    }
+
+    // ---- "CAR TEST" branding — top centre (multi-pass for depth) ----
+    {
+        auto titleArea = getLocalBounds().removeFromTop (static_cast<int> (44.0f * sy));
+        g.setFont (juce::FontOptions (24.0f * s, juce::Font::bold));
+
+        // Pass 1: soft dark shadow for separation
+        g.setColour (juce::Colours::black.withAlpha (0.6f));
+        g.drawText ("CAR TEST", titleArea.translated (0, static_cast<int> (2.0f * s)),
                      juce::Justification::centred);
+
+        // Pass 2: subtle amber glow (slightly larger offset spread)
+        g.setColour (DashColours::amberLED.withAlpha (0.18f));
+        g.drawText ("CAR TEST", titleArea.translated (static_cast<int> (-1.0f * s), 0),
+                     juce::Justification::centred);
+        g.drawText ("CAR TEST", titleArea.translated (static_cast<int> (1.0f * s), 0),
+                     juce::Justification::centred);
+        g.drawText ("CAR TEST", titleArea.translated (0, static_cast<int> (-1.0f * s)),
+                     juce::Justification::centred);
+        g.drawText ("CAR TEST", titleArea.translated (0, static_cast<int> (1.0f * s)),
+                     juce::Justification::centred);
+
+        // Pass 3: crisp main title at full opacity
+        g.setColour (DashColours::amberLED);
+        g.drawText ("CAR TEST", titleArea, juce::Justification::centred);
     }
 
-    // Subtitle
+    // ---- Subtitle ----
     {
-        g.setColour (DashColours::textDim);
-        g.setFont (juce::FontOptions (10.0f * juce::jmin (sx, sy)));
+        g.setColour (DashColours::textDim.withAlpha (0.6f));
+        g.setFont (juce::FontOptions (9.0f * s));
         g.drawText ("Save yourself the trip to the driveway.",
-                     getLocalBounds().withHeight (static_cast<int> (60.0f * sy))
-                                     .translated (0, static_cast<int> (28.0f * sy)),
+                     getLocalBounds().withHeight (static_cast<int> (56.0f * sy))
+                                     .translated (0, static_cast<int> (26.0f * sy)),
                      juce::Justification::centred);
     }
 }
 
 void CarTestAudioProcessorEditor::resized()
 {
-    // All positions are proportional to the current size so the layout
-    // scales when the user resizes from the bottom-right corner.
-
     const float w = static_cast<float> (getWidth());
     const float h = static_cast<float> (getHeight());
-    const float sx = w / 650.0f;   // scale factors relative to reference size
+    const float sx = w / 650.0f;
     const float sy = h / 380.0f;
 
     auto scaled = [&] (float x, float y, float bw, float bh) -> juce::Rectangle<int>
@@ -280,25 +377,31 @@ void CarTestAudioProcessorEditor::resized()
                  static_cast<int> (bw * sx), static_cast<int> (bh * sy) };
     };
 
-    // --- CAR button: large, centre of the console ---
-    sedanButton.setBounds (scaled (265.0f, 148.0f, 120.0f, 44.0f));
+    // ---- CAR button: centre console, head unit area (radio button) ----
+    sedanButton.setBounds (scaled (265.0f, 142.0f, 120.0f, 40.0f));
 
-    // --- BYPASS button: bottom-left ---
-    bypassButton.setBounds (scaled (24.0f, 326.0f, 80.0f, 34.0f));
+    // ---- BYPASS: bottom-left, near steering column ----
+    bypassButton.setBounds (scaled (22.0f, 324.0f, 84.0f, 34.0f));
 
-    // --- Right side stack: PHONE, LAPTOP, BT SPEAKER ---
-    phoneButton.setBounds  (scaled (526.0f, 120.0f, 100.0f, 32.0f));
-    laptopButton.setBounds (scaled (526.0f, 160.0f, 100.0f, 32.0f));
-    btButton.setBounds     (scaled (526.0f, 200.0f, 100.0f, 32.0f));
+    // ---- PHONE / LAPTOP / BT SPEAKER: passenger side dash, horizontal row ----
+    const float passBtnW = 60.0f;
+    const float passBtnH = 36.0f;
+    const float passGap  = 6.0f;
+    const float passStartX = 440.0f;
+    const float passY = 106.0f;
 
-    // --- Noise knob: lower-right, over HVAC area ---
-    int knobSize = static_cast<int> (64.0f * sx);
-    int knobX    = static_cast<int> (514.0f * sx);
-    int knobY    = static_cast<int> (280.0f * sy);
+    phoneButton.setBounds  (scaled (passStartX,                              passY, passBtnW, passBtnH));
+    laptopButton.setBounds (scaled (passStartX + 1.0f * (passBtnW + passGap), passY, passBtnW, passBtnH));
+    btButton.setBounds     (scaled (passStartX + 2.0f * (passBtnW + passGap), passY, passBtnW + 10.0f, passBtnH));
+
+    // ---- Noise knob: lower-right, HVAC area ----
+    int knobSize = static_cast<int> (56.0f * sx);
+    int knobX    = static_cast<int> (520.0f * sx);
+    int knobY    = static_cast<int> (285.0f * sy);
     noiseSlider.setBounds (knobX, knobY, knobSize, knobSize);
-    noiseLabel.setBounds  (knobX - static_cast<int> (10.0f * sx), knobY + knobSize + 2,
-                           knobSize + static_cast<int> (20.0f * sx),
-                           static_cast<int> (16.0f * sy));
+    noiseLabel.setBounds  (knobX - static_cast<int> (8.0f * sx), knobY + knobSize + 2,
+                           knobSize + static_cast<int> (16.0f * sx),
+                           static_cast<int> (14.0f * sy));
 }
 
 //==============================================================================

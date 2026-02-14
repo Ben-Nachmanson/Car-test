@@ -25,7 +25,7 @@ juce_generate_juce_header(CarTest)
 
 juce_add_binary_data(CarTestData
     SOURCES
-        Resources/bmw.jpg
+        Resources/Dashboard.png
         Resources/sedan_ir.wav
         Resources/phone_ir.wav
         Resources/laptop_ir.wav
