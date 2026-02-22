@@ -103,7 +103,7 @@ Both parameters are saved and recalled with your DAW session via JUCE's `AudioPr
 ### Steps
 
 ```bash
-git clone --recurse-submodules https://github.com/your-repo/Car-test.git
+git clone --recurse-submodules https://github.com/Ben-Nachmanson/Car-test.git
 cd Car-test
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --target CarTest
