@@ -6,36 +6,30 @@
 //==============================================================================
 DashboardLookAndFeel::DashboardLookAndFeel()
 {
-    setColour (juce::TextButton::textColourOffId, DashColours::textBright);
-    setColour (juce::TextButton::textColourOnId,  DashColours::textBright);
+    // Force neutral button colours to prevent LookAndFeel_V4 defaults leaking through
+    setColour (juce::TextButton::buttonColourId,   juce::Colour (0xff1a1a1a));
+    setColour (juce::TextButton::buttonOnColourId,  juce::Colour (0xff1a1a1a));
+    setColour (juce::TextButton::textColourOffId,   DashColours::textBright);
+    setColour (juce::TextButton::textColourOnId,    DashColours::textBright);
 }
 
 void DashboardLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& button,
                                                   const juce::Colour& /*backgroundColour*/,
                                                   bool isHighlighted, bool isDown)
 {
-    auto bounds = button.getLocalBounds().toFloat().reduced (1.0f);
+    auto bounds = button.getLocalBounds().toFloat();
+
+    // Kill any bleed-through — fill entire component area solid first
+    g.setColour (juce::Colour (0xff1a1a1a));
+    g.fillRect (bounds);
+
+    bounds = bounds.reduced (1.0f);
     const float cs = 3.5f;  // tight corner radius — physical car buttons
 
     const bool isOn = button.getToggleState();
 
-    // ---- Matte button surface with subtle gradient for 3D depth ----
-    if (isOn)
+    // ---- Matte button surface (identical for on/off — LED dot shows selection) ----
     {
-        // Active: neutral dark surface, same family as off-state but pressed in
-        juce::ColourGradient bgGrad (juce::Colour (0xff222222), bounds.getX(), bounds.getY(),
-                                      juce::Colour (0xff181818), bounds.getX(), bounds.getBottom(),
-                                      false);
-        g.setGradientFill (bgGrad);
-        g.fillRoundedRectangle (bounds, cs);
-
-        // Recessed inner shadow at top (pressed-in feel)
-        g.setColour (juce::Colours::black.withAlpha (0.4f));
-        g.fillRoundedRectangle (bounds.withHeight (2.5f), cs);
-    }
-    else
-    {
-        // Inactive: raised matte surface
         juce::ColourGradient bgGrad (juce::Colour (0xff2a2a2a), bounds.getX(), bounds.getY(),
                                       juce::Colour (0xff1a1a1a), bounds.getX(), bounds.getBottom(),
                                       false);
@@ -54,14 +48,13 @@ void DashboardLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button
 
         if (isDown)
         {
-            // Pressed: invert the emboss
             g.setColour (juce::Colours::black.withAlpha (0.15f));
             g.fillRoundedRectangle (bounds, cs);
         }
     }
 
     // ---- Crisp thin border ----
-    g.setColour (juce::Colours::white.withAlpha (isOn ? 0.12f : 0.06f));
+    g.setColour (juce::Colours::white.withAlpha (0.06f));
     g.drawRoundedRectangle (bounds, cs, 0.75f);
 
     // ---- Bottom-edge shadow (depth against panel) ----
@@ -78,11 +71,7 @@ void DashboardLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button
         float dotX = bounds.getCentreX() - dotSize * 0.5f;
         float dotY = bounds.getY() + 5.0f;
 
-        // LED glow
-        g.setColour (DashColours::amberLED.withAlpha (0.25f));
-        g.fillEllipse (dotX - 2.0f, dotY - 2.0f, dotSize + 4.0f, dotSize + 4.0f);
-
-        // LED dot
+        // LED dot only — no glow bleed
         g.setColour (DashColours::amberLED);
         g.fillEllipse (dotX, dotY, dotSize, dotSize);
     }
@@ -98,8 +87,7 @@ void DashboardLookAndFeel::drawButtonText (juce::Graphics& g, juce::TextButton& 
     if (isOn)
         bounds.translate (0, 2);
 
-    g.setColour (isOn ? DashColours::textBright
-                      : DashColours::textDim.withAlpha (0.7f));
+    g.setColour (DashColours::textBright);
 
     // Scale font with button height for consistency across sizes
     float fontSize = juce::jlimit (9.0f, 12.0f, static_cast<float> (bounds.getHeight()) * 0.32f);
@@ -227,6 +215,7 @@ CarTestAudioProcessorEditor::CarTestAudioProcessorEditor (CarTestAudioProcessor&
         auto* btn = presetButtons[i];
         addAndMakeVisible (btn);
         btn->setClickingTogglesState (false);
+        btn->setWantsKeyboardFocus (false);
         btn->setLookAndFeel (&dashboardLnF);
         btn->onClick = [this, idx = static_cast<int> (i)] { selectPreset (idx); };
     }

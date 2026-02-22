@@ -38,6 +38,12 @@ public:
     void drawButtonText (juce::Graphics&, juce::TextButton&,
                          bool shouldDrawButtonAsHighlighted,
                          bool shouldDrawButtonAsDown) override;
+
+    // Disable focus outline — LED dot is the only selection indicator
+    std::unique_ptr<juce::FocusOutline> createFocusOutlineForComponent (juce::Component&) override
+    {
+        return nullptr;
+    }
 };
 
 //==============================================================================

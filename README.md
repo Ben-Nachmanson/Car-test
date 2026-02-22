@@ -4,6 +4,8 @@
 
 Car Test is an audio plugin (VST3 / AU / Standalone) that simulates how your mix sounds on everyday playback systems — a car stereo, phone speaker, laptop, or Bluetooth speaker — so you can reference your music without leaving the studio.
 
+![Car Test Plugin Screenshot](car_test_screenshot.png)
+
 ## Why
 
 Most music is consumed on cheap speakers in noisy environments. Studio monitors tell you what your mix *is*; Car Test tells you what your mix *does* when it hits the real world. Catching problems early — buried vocals on phone speakers, bass that disappears on laptops, or a low end that overwhelms in the car — saves revision cycles and leads to mixes that translate everywhere.
