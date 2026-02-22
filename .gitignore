@@ -5,3 +5,8 @@ cmake-build-*/
 *.user
 .DS_Store
 node_modules/
+.cache/
+*.idx
+car_test_current.png
+car_test_full.png
+car_test_screenshot2.png
